@@ -39,6 +39,8 @@ public class ImageResizer {
 	public static final String REGEX_PATTERN = "(?<=: )\\w[^\\\\\"]*+";
 	/** Maximum pixel width for uploaded company logo */
 	public static final int MAX_WIDTH = 120;
+	/** */
+	public static final String COMMONS_PATH = System.getenv("COMMONS_PATH");
 	
 	/**
 	 * Main method; contains most critical functionality of program including establishing
@@ -66,11 +68,12 @@ public class ImageResizer {
 		 * Searches input for first line of input containing "number," which indicates how many
 		 * GitHub Issues are currently filed in the master repo
 		 */
+		//TODO Implement code to run through and count issues before going back and extracting info
 		while (fileReader.hasNextLine()) {
 			line = fileReader.nextLine();
 			if (line.contains(ISSUE_COUNT_FLAG) && !found) {
 				line = line.trim();
-				// todo Allow information to be successfully parsed with > 9 issues
+				//TODO Allow information to be successfully parsed with > 9 issues
 				issueCount = Integer.parseInt(line.substring(ISSUE_COUNT_LOCATION, ISSUE_COUNT_LOCATION + 1));
 				companyInfo = new String[issueCount][ISSUE_DATA];
 				found = true;
@@ -84,6 +87,7 @@ public class ImageResizer {
 			if (line.contains(BODY_FLAG)) {
 				bodyLine = fileReader.nextLine().trim();
 				Matcher m = Pattern.compile(REGEX_PATTERN).matcher(bodyLine);
+				System.out.println(COMMONS_PATH);
 				for (int j = 0; j < ISSUE_DATA; j++) {
 					if (m.find()) {
 						companyInfo[i][j] = m.group(0);
@@ -97,7 +101,7 @@ public class ImageResizer {
 		
 		//Appends the appropriate extracted information to the 'participants.yml' file
 		BufferedWriter out = null;
-		File f = new File("../../../data/participants.yml");
+		File f = new File(COMMONS_PATH + "/data/participants.yml");
 		try {
 			out = new BufferedWriter(new FileWriter(f, true));
 		} catch (IOException e) {
@@ -144,7 +148,8 @@ public class ImageResizer {
 		} catch (IOException e) {
 			System.out.println("Unable to read the image at the specified URL");
 		}
-		File outputLogo = new File("../../../source/img/commons-logos/" + company.toLowerCase().replaceAll("\\s","") + ".png");
+		//TODO Resizing mechanism
+		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" + company.toLowerCase().replaceAll("\\s","") + ".png");
 		try {
 			ImageIO.write(logo, "png", outputLogo);
 		} catch (IOException e) {
