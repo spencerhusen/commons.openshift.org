@@ -36,7 +36,7 @@ public class ImageResizer {
 	 * Regular expression pattern used to capture company name, url, and logo url from
 	 * cURL output
 	 */
-	public static final String REGEX_PATTERN = "(?<=: )\\w[^\\\\\"]*+";
+	public static final String REGEX_PATTERN = "(?<= )[^\\\\\"]++";
 	/** Maximum pixel width for uploaded company logo */
 	public static final int MAX_WIDTH = 120;
 	/** */
@@ -50,56 +50,20 @@ public class ImageResizer {
 	 */
 	public static void main(String[] args) throws IOException {
 		
-		//Establishes input Scanner used to read piped-in cURL output
-		Scanner fileReader = new Scanner(System.in);
+		//Establishes input Scanners used to read piped-in cURL output
+		Scanner inputReader = new Scanner(System.in);
 		
 		/**
-		 * Following 6 lines initialize variables necessary for properly parsing text input and
-		 * extracting company name, url, and logo url
+		 * Following 5 lines declare/initialize String variables necessary for properly parsing
+		 * text input and extracting company name, url, and logo url
 		 */
 		String line;
-		int issueCount = 0;
-		boolean found = false;
-		String[][] companyInfo = null;
-		String bodyLine = null;
-		int i = 0;
+		String bodyLine;
+		String company = null;
+		String link =  null;
+		String logo = null;
 		
-		/**
-		 * Searches input for first line of input containing "number," which indicates how many
-		 * GitHub Issues are currently filed in the master repo
-		 */
-		//TODO Implement code to run through and count issues before going back and extracting info
-		while (fileReader.hasNextLine()) {
-			line = fileReader.nextLine();
-			if (line.contains(ISSUE_COUNT_FLAG) && !found) {
-				line = line.trim();
-				//TODO Allow information to be successfully parsed with > 9 issues
-				issueCount = Integer.parseInt(line.substring(ISSUE_COUNT_LOCATION, ISSUE_COUNT_LOCATION + 1));
-				companyInfo = new String[issueCount][ISSUE_DATA];
-				found = true;
-			}
-			/**
-			 * While traversing each line of input file, stops at each line containing
-			 * "author association," which will always be located in line before important body
-			 * information. Once there, program uses a regular expression pattern to extract the
-			 * company name, url, and logo url and stores the information in a 2D array
-			 */
-			if (line.contains(BODY_FLAG)) {
-				bodyLine = fileReader.nextLine().trim();
-				Matcher m = Pattern.compile(REGEX_PATTERN).matcher(bodyLine);
-				System.out.println(COMMONS_PATH);
-				for (int j = 0; j < ISSUE_DATA; j++) {
-					if (m.find()) {
-						companyInfo[i][j] = m.group(0);
-						System.out.println(companyInfo[i][j]);
-					}
-				}
-				i++;
-			}
-		}
-		fileReader.close();
-		
-		//Appends the appropriate extracted information to the 'participants.yml' file
+		//Establishes the BufferedWriter needed to append text to 'participants.yml'
 		BufferedWriter out = null;
 		File f = new File(COMMONS_PATH + "/data/participants.yml");
 		try {
@@ -108,31 +72,44 @@ public class ImageResizer {
 			System.out.println("Error: Could not write to specified file");
 			e.printStackTrace();
 		}
-		for (int x = 0; x < issueCount; x++) {
-			for (int y = 0; y < ISSUE_DATA; y++) {
-				if (y == 0) {
-					out.append("- name: \"" + companyInfo[x][y] + "\"");
+		
+		/**
+		 * While traversing each line of input file, stops at each line containing
+		 * "author association," which will always be located in line before important body
+		 * information. Once there, program uses a regular expression pattern to extract the
+		 * company name, url, and logo url and stores the information in a 2D array
+		 */
+		while (inputReader.hasNextLine()) {
+			line = inputReader.nextLine();
+			if (line.contains(BODY_FLAG)) {
+				bodyLine = inputReader.nextLine().trim();
+				if (bodyLine.substring(9, 16).equalsIgnoreCase("Company")) {
+					Matcher m = Pattern.compile(REGEX_PATTERN).matcher(bodyLine);
+					for (int i = 0; i < ISSUE_DATA; i++) {
+						if (m.find()) {
+							//TODO Fix matching mechanism
+							company = m.group(0);
+							link = m.group();
+							logo = m.group();
+						}
+					}
+					System.out.println(company);
+					System.out.println(link);
+					System.out.println(logo);
+					resizeImage(company, logo);
+					out.append("- name: \"" + company + "\"");
 					out.newLine();
-				} else if (y == 1) {
-					out.append("  link: \"" + companyInfo[x][y] + "\"");
+					out.append("  link: \"" + link + "\"");
 					out.newLine();
-				} else {
-					out.append("  logo: \"" + companyInfo[x][y] + "\"");
+					out.append("  logo: \"commons-logos/" + company.toLowerCase().replaceAll("\\s","") + ".png");
 					out.newLine();
 				}
 			}
 		}
+		inputReader.close();
 		
 		//Closes FileWriter
 		out.close();
-		
-		/**
-		 * For each issue, passes the URL of the company's logo file to be resized and uploaded
-		 * to master repo
-		 */
-		for (int cntr = 0; cntr < issueCount; cntr++) {
-			resizeImage(companyInfo[cntr][0], companyInfo[cntr][2], issueCount);
-		}
 	}
 	
 	/**
@@ -140,7 +117,7 @@ public class ImageResizer {
 	 * it, and outputting it to the GitHub repo in its correct location
 	 * @param logoUrl the String representing the URL of where each company's logo is located online
 	 */
-	public static void resizeImage(String company, String logoUrl, int issueCount) {
+	public static void resizeImage(String company, String logoUrl) {
 		BufferedImage logo = null;
 		try {
 			URL url = new URL(logoUrl);
