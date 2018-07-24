@@ -21,10 +21,12 @@ import javax.imageio.ImageIO;
  */
 public class ImageResizer {
 
-	/** Specific text String located in cURL command output on same line as number of Issues */
-	public static final String ISSUE_COUNT_FLAG = "number";
-	/** Specific index within 'number' line in cURL output noting how many Issues exist in repo */
-	public static final int ISSUE_COUNT_LOCATION = 10;
+	/** Specific text String located in cURL command output on same line as body of Issues */
+	public static final String ISSUE_FLAG = "Company";
+	/** Specific index within 'body' line where start of ISSUE_FLAG may exist */
+	public static final int ISSUE_FLAG_START = 9;
+	/** Specific index within 'body' line where end of ISSUE_FLAG may exist */
+	public static final int ISSUE_FLAG_END = 16;
 	/** Number of pieces of information extracted from each GitHub issue */
 	public static final int ISSUE_DATA = 3;
 	/**
@@ -39,29 +41,35 @@ public class ImageResizer {
 	public static final String REGEX_PATTERN = "(?<= )[^\\\\\"]++";
 	/** Maximum pixel width for uploaded company logo */
 	public static final int MAX_WIDTH = 120;
-	/** */
+	/**
+	 * System's COMMONS_PATH environmental variable, which leads to the root directory
+	 * of the project's GitHub repo
+	 */
 	public static final String COMMONS_PATH = System.getenv("COMMONS_PATH");
 	
 	/**
 	 * Main method; contains most critical functionality of program including establishing
 	 * Scanner for piped input and extracting critical body information from cURL output
 	 * @param args command line arguments
-	 * @throws IOException if the appending operation fails
+	 * @throws IOException if the reading/writing operation fails
 	 */
 	public static void main(String[] args) throws IOException {
 		
-		//Establishes input Scanners used to read piped-in cURL output
+		//Establishes input Scanners used to read piped-in cURL output and 'participants.yml' file
 		Scanner inputReader = new Scanner(System.in);
 		
 		/**
-		 * Following 5 lines declare/initialize String variables necessary for properly parsing
+		 * Following lines declare/initialize variables necessary for properly parsing
 		 * text input and extracting company name, url, and logo url
 		 */
 		String line;
 		String bodyLine;
+		String ymlLine;
+		boolean duplicate = false;
 		String company = null;
 		String link =  null;
 		String logo = null;
+		int companiesAdded = 0;
 		
 		//Establishes the BufferedWriter needed to append text to 'participants.yml'
 		BufferedWriter out = null;
@@ -74,48 +82,70 @@ public class ImageResizer {
 		}
 		
 		/**
-		 * While traversing each line of input file, stops at each line containing
-		 * "author association," which will always be located in line before important body
-		 * information. Once there, program uses a regular expression pattern to extract the
-		 * company name, url, and logo url and stores the information in a 2D array
+		 * TODO this Javadoc
 		 */
 		while (inputReader.hasNextLine()) {
 			line = inputReader.nextLine();
 			if (line.contains(BODY_FLAG)) {
 				bodyLine = inputReader.nextLine().trim();
-				if (bodyLine.substring(9, 16).equalsIgnoreCase("Company")) {
+				if (bodyLine.substring(ISSUE_FLAG_START, ISSUE_FLAG_END)
+						.equalsIgnoreCase(ISSUE_FLAG)) {
 					Matcher m = Pattern.compile(REGEX_PATTERN).matcher(bodyLine);
 					for (int i = 0; i < ISSUE_DATA; i++) {
 						if (m.find()) {
-							//TODO Fix matching mechanism
-							company = m.group(0);
-							link = m.group();
-							logo = m.group();
+							if (i == 0) {
+								company = m.group();
+							}
+							else if (i == 1) {
+								link = m.group();
+							} else {
+								logo = m.group();
+							}
 						}
 					}
-					System.out.println(company);
-					System.out.println(link);
-					System.out.println(logo);
-					resizeImage(company, logo);
-					out.append("- name: \"" + company + "\"");
-					out.newLine();
-					out.append("  link: \"" + link + "\"");
-					out.newLine();
-					out.append("  logo: \"commons-logos/" + company.toLowerCase().replaceAll("\\s","") + ".png");
-					out.newLine();
+					Scanner participantsReader = new Scanner(new File(COMMONS_PATH
+							+ "/data/participants.yml"));
+					while (participantsReader.hasNextLine()) {
+						ymlLine = participantsReader.nextLine();
+						if (ymlLine.contains(company)) {
+							duplicate = true;
+						}
+					}
+					participantsReader.close();
+					if (!duplicate) {
+						resizeImage(company, logo);
+						companiesAdded++;
+						out.append("- name: \"" + company + "\"");
+						out.newLine();
+						out.append("  link: \"" + link + "\"");
+						out.newLine();
+						out.append("  logo: \"commons-logos/" + 
+								company.toLowerCase().replaceAll("\\s","") + ".png\"");
+						out.newLine();
+						System.out.println();
+						System.out.println("Company \"" + company + "\" added.");
+					}
 				}
 			}
 		}
-		inputReader.close();
 		
-		//Closes FileWriter
+		/**
+		 * Empty print line for console clarity, closes the inputReader, prints short message
+		 * if no new participants were appended to 'participants.yml', and closes the
+		 * BufferedWriter
+		 */
+		inputReader.close();
+		System.out.println();
+		if (companiesAdded == 0) {
+			System.out.println("No new companies added.\n");
+		}
 		out.close();
 	}
 	
 	/**
 	 * Void method responsible for processing each company's logo given its URL, properly resizing
 	 * it, and outputting it to the GitHub repo in its correct location
-	 * @param logoUrl the String representing the URL of where each company's logo is located online
+	 * @param logoUrl the String representing the URL of where the company's logo is located
 	 */
 	public static void resizeImage(String company, String logoUrl) {
 		BufferedImage logo = null;
@@ -123,14 +153,15 @@ public class ImageResizer {
 			URL url = new URL(logoUrl);
 			logo = ImageIO.read(url);
 		} catch (IOException e) {
-			System.out.println("Unable to read the image at the specified URL");
+			System.out.println("Error: Unable to read the image at the specified URL");
 		}
 		//TODO Resizing mechanism
-		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" + company.toLowerCase().replaceAll("\\s","") + ".png");
+		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" + 
+				company.toLowerCase().replaceAll("\\s","") + ".png");
 		try {
 			ImageIO.write(logo, "png", outputLogo);
 		} catch (IOException e) {
-			System.out.println("Unable to write the image to the specified path");
+			System.out.println("Error: Unable to write the image to the specified path");
 		}
 	}
 	
