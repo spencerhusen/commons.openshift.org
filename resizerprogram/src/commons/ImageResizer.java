@@ -40,7 +40,7 @@ public class ImageResizer {
 	 */
 	public static final String REGEX_PATTERN = "(?<= )[^\\\\\"]++";
 	/** Maximum pixel width for uploaded company logo */
-	public static final int MAX_WIDTH = 120;
+	public static final int MAX_HEIGHT = 60;
 	/**
 	 * System's COMMONS_PATH environmental variable, which leads to the root directory
 	 * of the project's GitHub repo
@@ -67,8 +67,8 @@ public class ImageResizer {
 		String ymlLine;
 		boolean duplicate = false;
 		String company = null;
-		String link =  null;
-		String logo = null;
+		String url =  null;
+		String link = null;
 		int companiesAdded = 0;
 		
 		//Establishes the BufferedWriter needed to append text to 'participants.yml'
@@ -97,9 +97,9 @@ public class ImageResizer {
 								company = m.group();
 							}
 							else if (i == 1) {
-								link = m.group();
+								url = m.group();
 							} else {
-								logo = m.group();
+								link = m.group();
 							}
 						}
 					}
@@ -113,17 +113,17 @@ public class ImageResizer {
 					}
 					participantsReader.close();
 					if (!duplicate) {
-						resizeImage(company, logo);
+						String extension = getExtension(link);
+						resizeImage(company, link);
 						companiesAdded++;
 						out.append("- name: \"" + company + "\"");
 						out.newLine();
-						out.append("  link: \"" + link + "\"");
+						out.append("  link: \"" + url + "\"");
 						out.newLine();
 						out.append("  logo: \"commons-logos/" + 
-								company.toLowerCase().replaceAll("\\s","") + ".png\"");
+								company.toLowerCase().replaceAll("\\s","") + extension + "\"");
 						out.newLine();
-						System.out.println();
-						System.out.println("Company \"" + company + "\" added.");
+						System.out.println("\nCompany \"" + company + "\" added.");
 					}
 				}
 			}
@@ -143,11 +143,31 @@ public class ImageResizer {
 	}
 	
 	/**
+	 * Static method simply responsible for determining the file extension of the picture file
+	 * going to be used as the company's logo on the website
+	 * @param logo the url of the image thats extension is to be determined
+	 * @return the proper extension of the file
+	 */
+	public static String getExtension(String img) {
+		if (img.substring(img.length() - 5).equals(".jpeg")) {
+			return ".jpeg";
+		} else {
+			return img.substring(img.length() - 4);
+		}
+	}
+	
+	/**
 	 * Void method responsible for processing each company's logo given its URL, properly resizing
 	 * it, and outputting it to the GitHub repo in its correct location
 	 * @param logoUrl the String representing the URL of where the company's logo is located
 	 */
 	public static void resizeImage(String company, String logoUrl) {
+		String extension;
+		if (logoUrl.substring(logoUrl.length() - 5).equals(".jpeg")) {
+			extension = ".jpeg";
+		} else {
+			extension = logoUrl.substring(logoUrl.length() - 4);
+		}
 		BufferedImage logo = null;
 		try {
 			URL url = new URL(logoUrl);
@@ -156,10 +176,12 @@ public class ImageResizer {
 			System.out.println("Error: Unable to read the image at the specified URL");
 		}
 		//TODO Resizing mechanism
+		System.out.println(logo.getHeight());
+		System.out.println(logo.getWidth());
 		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" + 
-				company.toLowerCase().replaceAll("\\s","") + ".png");
+				company.toLowerCase().replaceAll("\\s","") + extension);
 		try {
-			ImageIO.write(logo, "png", outputLogo);
+			ImageIO.write(logo, extension, outputLogo);
 		} catch (IOException e) {
 			System.out.println("Error: Unable to write the image to the specified path");
 		}
