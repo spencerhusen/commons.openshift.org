@@ -5,11 +5,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Scanner;
 import java.util.regex.*;
 
 import javax.imageio.ImageIO;
+
+import org.apache.commons.io.FileUtils;
 
 /**
  * Java program responsible for extracting necessary information from cURL command, resizing
@@ -40,12 +43,17 @@ public class ImageResizer {
 	 */
 	public static final String REGEX_PATTERN = "(?<= )[^\\\\\"]++";
 	/** Maximum pixel width for uploaded company logo */
+	
 	public static final int MAX_HEIGHT = 60;
 	/**
 	 * System's COMMONS_PATH environmental variable, which leads to the root directory
 	 * of the project's GitHub repo
 	 */
 	public static final String COMMONS_PATH = System.getenv("COMMONS_PATH");
+	/**
+	 * Discretionary number of milliseconds the copyURLToFile method will run until timeout
+	 */
+	public static final int TIMEOUT_MILLIS = 10000;
 	
 	/**
 	 * Main method; contains most critical functionality of program including establishing
@@ -114,7 +122,11 @@ public class ImageResizer {
 					participantsReader.close();
 					if (!duplicate) {
 						String extension = getExtension(link);
-						resizeImage(company, link);
+						if (extension.equals(".svg")) {
+							resizeSVG(company, link);
+						} else {
+							resizeNonSVG(company, link, extension);
+						}
 						companiesAdded++;
 						out.append("- name: \"" + company + "\"");
 						out.newLine();
@@ -149,41 +161,60 @@ public class ImageResizer {
 	 * @return the proper extension of the file
 	 */
 	public static String getExtension(String img) {
-		if (img.substring(img.length() - 5).equals(".jpeg")) {
-			return ".jpeg";
-		} else {
-			return img.substring(img.length() - 4);
-		}
+		return img.substring(img.lastIndexOf("."));
 	}
 	
 	/**
-	 * Void method responsible for processing each company's logo given its URL, properly resizing
-	 * it, and outputting it to the GitHub repo in its correct location
-	 * @param logoUrl the String representing the URL of where the company's logo is located
+	 * TODO this Javadoc
 	 */
-	public static void resizeImage(String company, String logoUrl) {
-		String extension;
-		if (logoUrl.substring(logoUrl.length() - 5).equals(".jpeg")) {
-			extension = ".jpeg";
-		} else {
-			extension = logoUrl.substring(logoUrl.length() - 4);
-		}
+	public static void resizeNonSVG(String company, String logoUrl, String extension) {		
+		//Using the ImageIO and URL classes, reads in the image at the given URL and stores H & W
 		BufferedImage logo = null;
+		URL url;
 		try {
-			URL url = new URL(logoUrl);
+			url = new URL(logoUrl);
 			logo = ImageIO.read(url);
 		} catch (IOException e) {
 			System.out.println("Error: Unable to read the image at the specified URL");
 		}
-		//TODO Resizing mechanism
-		System.out.println(logo.getHeight());
-		System.out.println(logo.getWidth());
+		int height = logo.getHeight();
+		int width = logo.getWidth();
+		int type = logo.getType();
+		
+		//Resizes image to its proper dimensions if height exceeds maximum allowed
+		if (logo.getHeight() > MAX_HEIGHT) {
+			logo = new BufferedImage((width * (MAX_HEIGHT / height)), 
+				(height * (MAX_HEIGHT / height)), type);
+		}
+		
+		//Writes the new, resized image to its proper location in the GitHub repo
 		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" + 
 				company.toLowerCase().replaceAll("\\s","") + extension);
 		try {
 			ImageIO.write(logo, extension, outputLogo);
 		} catch (IOException e) {
-			System.out.println("Error: Unable to write the image to the specified path");
+			System.out.println("Error: Unable to write the image to the specified location");
+		}
+	}
+	
+	/**
+	 * TODO this Javadoc
+	 */
+	public static void resizeSVG(String company, String logoUrl) {
+		URL url = null;
+		try {
+			url = new URL(logoUrl);
+		} catch (MalformedURLException e) {
+			System.out.println("Error: Invalid URL");
+			e.printStackTrace();
+		}
+		File svgFile = new File(COMMONS_PATH + "/source/img/commons-logos/" + 
+				company.toLowerCase().replaceAll("\\s","") + ".svg");
+		try {
+			FileUtils.copyURLToFile(url, svgFile, TIMEOUT_MILLIS, TIMEOUT_MILLIS);
+		} catch (IOException e) {
+			System.out.println("Error: Unable to write the image to the specified location");
+			e.printStackTrace();
 		}
 	}
 	
