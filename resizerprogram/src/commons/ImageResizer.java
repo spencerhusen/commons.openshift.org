@@ -18,7 +18,7 @@ import org.apache.commons.io.FileUtils;
  * Java program responsible for extracting necessary information from cURL command, resizing
  * and re-uploading the picture at the provided link to the correct size, and appending the new
  * information/file to the 'participants.yml' file within the commons.openshift.org GitHub repo
- * 
+ *
  * @author shusen - Summer 2018
  *
  */
@@ -43,8 +43,8 @@ public class ImageResizer {
 	 */
 	public static final String REGEX_PATTERN = "(?<= )[^\\\\\"]++";
 	/** Maximum pixel width for uploaded company logo */
-	
-	public static final int MAX_HEIGHT = 60;
+
+	public static final float MAX_HEIGHT = 60;
 	/**
 	 * System's COMMONS_PATH environmental variable, which leads to the root directory
 	 * of the project's GitHub repo
@@ -54,7 +54,7 @@ public class ImageResizer {
 	 * Discretionary number of milliseconds the copyURLToFile method will run until timeout
 	 */
 	public static final int TIMEOUT_MILLIS = 10000;
-	
+
 	/**
 	 * Main method; contains most critical functionality of program including establishing
 	 * Scanner for piped input and extracting critical body information from cURL output
@@ -62,10 +62,10 @@ public class ImageResizer {
 	 * @throws IOException if the reading/writing operation fails
 	 */
 	public static void main(String[] args) throws IOException {
-		
+
 		//Establishes input Scanners used to read piped-in cURL output and 'participants.yml' file
 		Scanner inputReader = new Scanner(System.in);
-		
+
 		/**
 		 * Following lines declare/initialize variables necessary for properly parsing
 		 * text input and extracting company name, url, and logo url
@@ -78,7 +78,7 @@ public class ImageResizer {
 		String url =  null;
 		String link = null;
 		int companiesAdded = 0;
-		
+
 		//Establishes the BufferedWriter needed to append text to 'participants.yml'
 		BufferedWriter out = null;
 		File f = new File(COMMONS_PATH + "/data/participants.yml");
@@ -88,7 +88,7 @@ public class ImageResizer {
 			System.out.println("Error: Could not write to specified file");
 			e.printStackTrace();
 		}
-		
+
 		/**
 		 * TODO this Javadoc
 		 */
@@ -132,7 +132,7 @@ public class ImageResizer {
 						out.newLine();
 						out.append("  link: \"" + url + "\"");
 						out.newLine();
-						out.append("  logo: \"commons-logos/" + 
+						out.append("  logo: \"commons-logos/" +
 								company.toLowerCase().replaceAll("\\s","") + extension + "\"");
 						out.newLine();
 						System.out.println("\nCompany \"" + company + "\" added.");
@@ -140,7 +140,7 @@ public class ImageResizer {
 				}
 			}
 		}
-		
+
 		/**
 		 * Empty print line for console clarity, closes the inputReader, prints short message
 		 * if no new participants were appended to 'participants.yml', and closes the
@@ -153,7 +153,7 @@ public class ImageResizer {
 		}
 		out.close();
 	}
-	
+
 	/**
 	 * Static method simply responsible for determining the file extension of the picture file
 	 * going to be used as the company's logo on the website
@@ -163,16 +163,17 @@ public class ImageResizer {
 	public static String getExtension(String img) {
 		return img.substring(img.lastIndexOf("."));
 	}
-	
+
 	/**
 	 * TODO this Javadoc
 	 */
-	public static void resizeNonSVG(String company, String logoUrl, String extension) {		
+	public static void resizeNonSVG(String company, String logoUrl, String extension) {
 		//Using the ImageIO and URL classes, reads in the image at the given URL and stores H & W
 		BufferedImage logo = null;
 		URL url;
 		try {
 			url = new URL(logoUrl);
+      System.out.println(url);
 			logo = ImageIO.read(url);
 		} catch (IOException e) {
 			System.out.println("Error: Unable to read the image at the specified URL");
@@ -180,15 +181,25 @@ public class ImageResizer {
 		int height = logo.getHeight();
 		int width = logo.getWidth();
 		int type = logo.getType();
-		
+    float conversion_ratio = MAX_HEIGHT / (float) height;
+    // System.out.println(height);
+    // System.out.println(width);
+    // System.out.println(type);
+    // System.out.println(conversion_ratio);
+    // System.out.println((int) (width *  conversion_ratio));
+    // System.out.println((int) (height *  conversion_ratio));
+
 		//Resizes image to its proper dimensions if height exceeds maximum allowed
-		if (logo.getHeight() > MAX_HEIGHT) {
-			logo = new BufferedImage((width * (MAX_HEIGHT / height)), 
-				(height * (MAX_HEIGHT / height)), type);
+		if (height > MAX_HEIGHT) {
+			logo = new BufferedImage(
+        ((int) (width *  conversion_ratio)),
+				((int) (height *  conversion_ratio)),
+        type
+      );
 		}
-		
+
 		//Writes the new, resized image to its proper location in the GitHub repo
-		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" + 
+		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" +
 				company.toLowerCase().replaceAll("\\s","") + extension);
 		try {
 			ImageIO.write(logo, extension, outputLogo);
@@ -196,7 +207,7 @@ public class ImageResizer {
 			System.out.println("Error: Unable to write the image to the specified location");
 		}
 	}
-	
+
 	/**
 	 * TODO this Javadoc
 	 */
@@ -208,7 +219,7 @@ public class ImageResizer {
 			System.out.println("Error: Invalid URL");
 			e.printStackTrace();
 		}
-		File svgFile = new File(COMMONS_PATH + "/source/img/commons-logos/" + 
+		File svgFile = new File(COMMONS_PATH + "/source/img/commons-logos/" +
 				company.toLowerCase().replaceAll("\\s","") + ".svg");
 		try {
 			FileUtils.copyURLToFile(url, svgFile, TIMEOUT_MILLIS, TIMEOUT_MILLIS);
@@ -217,5 +228,5 @@ public class ImageResizer {
 			e.printStackTrace();
 		}
 	}
-	
+
 }
