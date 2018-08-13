@@ -6,6 +6,6 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/Users/shusen/Documents/misc/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="/Users/shusen/Documents/development/commons.openshift.org/resizerprogram/src/commons/commons-io-2.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
