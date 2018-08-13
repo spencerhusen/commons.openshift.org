@@ -173,7 +173,6 @@ public class ImageResizer {
 		URL url;
 		try {
 			url = new URL(logoUrl);
-			System.out.println(url);
 			logo = ImageIO.read(url);
 		} catch (IOException e) {
 			System.out.println("Error: Unable to read the image at the specified URL");
@@ -181,18 +180,12 @@ public class ImageResizer {
 		int height = logo.getHeight();
 		int width = logo.getWidth();
 		int type = logo.getType();
-		float conversion_ratio = MAX_HEIGHT / (float) height;
-		// System.out.println(height);
-		// System.out.println(width);
-		// System.out.println(type);
-		// System.out.println(conversion_ratio);
-		// System.out.println((int) (width *  conversion_ratio));
-		// System.out.println((int) (height *  conversion_ratio));
+		float conversionRatio = MAX_HEIGHT / (float) height;
 
 		//Resizes image to its proper dimensions if height exceeds maximum allowed
 		if (height > MAX_HEIGHT) {
-			logo = new BufferedImage(((int) (width *  conversion_ratio)),
-				((int) (height *  conversion_ratio)), type);
+			logo = new BufferedImage(((int) (width *  conversionRatio)),
+				((int) (height *  conversionRatio)), type);
 		}
 
 		//Writes the new, resized image to its proper location in the GitHub repo
