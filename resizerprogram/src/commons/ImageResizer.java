@@ -123,7 +123,7 @@ public class ImageResizer {
 					participantsReader.close();
 					if (!duplicate) {
 						String extension = getExtension(link);
-						if (extension.equals(".svg")) {
+						if (extension.equals("svg")) {
 							resizeSVG(company, link);
 						} else {
 							resizeNonSVG(company, link, extension);
@@ -134,7 +134,7 @@ public class ImageResizer {
 						out.append("  link: \"" + url + "\"");
 						out.newLine();
 						out.append("  logo: \"commons-logos/" +
-								company.toLowerCase().replaceAll("\\s","") + extension + "\"");
+								company.toLowerCase().replaceAll("\\s","") + "." + extension + "\"");
 						out.newLine();
 						System.out.println("\nCompany \"" + company + "\" added.");
 					}
@@ -162,7 +162,7 @@ public class ImageResizer {
 	 * @return the proper extension of the file
 	 */
 	public static String getExtension(String img) {
-		return img.substring(img.lastIndexOf("."));
+		return img.substring(img.lastIndexOf(".") + 1);
 	}
 
 	/**
@@ -203,7 +203,7 @@ public class ImageResizer {
 		
 		//Writes the new, resized image to its proper location in the GitHub repo
 		File outputFile = new File(COMMONS_PATH + "/source/img/commons-logos/" +
-				company.toLowerCase().replaceAll("\\s","") + extension);
+				company.toLowerCase().replaceAll("\\s","") + "." + extension);
 		if (!resized) {
 			try {
 				ImageIO.write(logo, extension, outputFile);
