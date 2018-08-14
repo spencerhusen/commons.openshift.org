@@ -1,5 +1,6 @@
 package commons;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -168,7 +169,7 @@ public class ImageResizer {
 	 * TODO this Javadoc
 	 */
 	public static void resizeNonSVG(String company, String logoUrl, String extension) {
-		//Using the ImageIO and URL classes, reads in the image at the given URL and stores H & W
+		//Using the ImageIO and URL classes, reads in the image at the given URL
 		BufferedImage logo = null;
 		URL url;
 		try {
@@ -177,24 +178,44 @@ public class ImageResizer {
 		} catch (IOException e) {
 			System.out.println("Error: Unable to read the image at the specified URL");
 		}
+		
+		//Initializes dimensional variables for input logo image and whether image was resized
 		int height = logo.getHeight();
 		int width = logo.getWidth();
 		int type = logo.getType();
 		float conversionRatio = MAX_HEIGHT / (float) height;
+		boolean resized = false;
+		BufferedImage outputLogo = null;
 
-		//Resizes image to its proper dimensions if height exceeds maximum allowed
+		/**
+		 * Re-assigns width and height variables to properly scale logo dimensions and draws logo
+		 * image onto newly resized "blank canvas" IF height exceeds maximum height
+		 */
 		if (height > MAX_HEIGHT) {
-			logo = new BufferedImage(((int) (width *  conversionRatio)),
-				((int) (height *  conversionRatio)), type);
+			resized = true;
+			width = (int) (width * conversionRatio);
+			height = (int) (height * conversionRatio);
+			outputLogo = new BufferedImage(width, height, type);
+			Graphics2D imageDrawer = outputLogo.createGraphics();
+			imageDrawer.drawImage(logo, 0, 0, width, height, null);
+			imageDrawer.dispose();
 		}
-
+		
 		//Writes the new, resized image to its proper location in the GitHub repo
-		File outputLogo = new File(COMMONS_PATH + "/source/img/commons-logos/" +
+		File outputFile = new File(COMMONS_PATH + "/source/img/commons-logos/" +
 				company.toLowerCase().replaceAll("\\s","") + extension);
-		try {
-			ImageIO.write(logo, extension, outputLogo);
-		} catch (IOException e) {
-			System.out.println("Error: Unable to write the image to the specified location");
+		if (!resized) {
+			try {
+				ImageIO.write(logo, extension, outputFile);
+			} catch (IOException e) {
+				System.out.println("Error: Unable to write the image to the specified location");
+			}
+		} else {
+			try {
+				ImageIO.write(outputLogo, extension, outputFile);
+			} catch (IOException e) {
+				System.out.println("Error: Unable to write the image to the specified location");
+			}
 		}
 	}
 
