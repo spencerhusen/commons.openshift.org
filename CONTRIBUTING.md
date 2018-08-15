@@ -27,9 +27,9 @@ Currently the most common task is to add partners' information to the website, i
 There exists a shell script and Java program within the repository that automates the addition of partners to OpenShift Commons. To use the script and program to add a partner, add an Issue where the body is in the following format:
 
 ```
-Company: *Company Name*
-URL: *URL of Home Web Page*
-Logo: *URL of the Company's Logo*
+Company: Company Name
+URL: URL of Company's Website
+Logo: URL of the Company's Logo (.jpg, .jpeg, .svg, etc)
 ```
 
 Capitalization of the fields does not matter, however each need to be on different lines, spelled correctly, and be followed with `: ` (note the space). A "TBD" can act as a placeholder for any of the three fields. The program will simply skip the issue entirely until the TBD is revised. The website is built using the script and program every evening at midnight.
