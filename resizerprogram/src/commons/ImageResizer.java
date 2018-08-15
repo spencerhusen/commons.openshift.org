@@ -128,6 +128,7 @@ public class ImageResizer {
 							}
 						}
 					}
+					
 					Scanner participantsReader = new Scanner(new File(COMMONS_PATH
 							+ "/data/participants.yml"));
 					//Checks for duplicate and checks to see if any field is "TBD"
@@ -140,6 +141,7 @@ public class ImageResizer {
 						}
 					}
 					participantsReader.close();
+					
 					if (addIssue) {
 						String extension = getExtension(link);
 						//If SVG file, does not resize image and vice-a-versa
@@ -265,6 +267,7 @@ public class ImageResizer {
 			System.out.println("Error: Invalid URL");
 			e.printStackTrace();
 		}
+		
 		File svgFile = new File(COMMONS_PATH + "/source/img/commons-logos/" +
 				company.toLowerCase().replaceAll("\\s","") + ".svg");
 		try {
