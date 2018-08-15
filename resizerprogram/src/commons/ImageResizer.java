@@ -173,7 +173,7 @@ public class ImageResizer {
 		 */
 		inputReader.close();
 		System.out.println();
-		if (companiesAdded) {
+		if (!companiesAdded) {
 			System.out.println("No new companies added.\n");
 		}
 		out.close();
