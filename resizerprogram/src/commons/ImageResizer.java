@@ -134,9 +134,9 @@ public class ImageResizer {
 					//Checks for duplicate and checks to see if any field is "TBD"
 					while (participantsReader.hasNextLine()) {
 						ymlLine = participantsReader.nextLine();
-						if (ymlLine.contains(company) || (company.equalsIgnoreCase(ISSUE_SKIP_FLAG))
+						if (ymlLine.contains(company) && ((company.equalsIgnoreCase(ISSUE_SKIP_FLAG))
 								|| (url.equalsIgnoreCase(ISSUE_SKIP_FLAG))
-								|| (link.equalsIgnoreCase(ISSUE_SKIP_FLAG))) {
+								|| (link.equalsIgnoreCase(ISSUE_SKIP_FLAG)))) {
 							addIssue = false;
 						}
 					}
@@ -183,7 +183,7 @@ public class ImageResizer {
 	 * Static method simply responsible for determining the file extension of the picture file
 	 * going to be used as the company's logo on the website
 	 * @param logo the url of the image thats extension is to be determined
-	 * @return the proper extension of the file
+	 * @return the file extension of the image at the URL
 	 */
 	public static String getExtension(String img) {
 		return img.substring(img.lastIndexOf(".") + 1);
