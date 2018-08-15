@@ -182,7 +182,7 @@ public class ImageResizer {
 	/**
 	 * Static method simply responsible for determining the file extension of the picture file
 	 * going to be used as the company's logo on the website
-	 * @param logo the url of the image thats extension is to be determined
+	 * @param img the name of the image file whose extension is to be retrieved
 	 * @return the file extension of the image at the URL
 	 */
 	public static String getExtension(String img) {
