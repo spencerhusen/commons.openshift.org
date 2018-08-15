@@ -25,36 +25,46 @@ import org.apache.commons.io.FileUtils;
  */
 public class ImageResizer {
 
-	/** Specific text String located in cURL command output on same line as body of Issues */
-	public static final String ISSUE_FLAG = "Company";
-	/** Specific index within 'body' line where start of ISSUE_FLAG may exist */
-	public static final int ISSUE_FLAG_START = 9;
-	/** Specific index within 'body' line where end of ISSUE_FLAG may exist */
-	public static final int ISSUE_FLAG_END = 16;
-	/** Number of pieces of information extracted from each GitHub issue */
-	public static final int ISSUE_DATA = 3;
 	/**
 	 * Specific text String located in cURL command output on previous line as extracted body
 	 * information
 	 */
-	public static final String BODY_FLAG = "author_association";
-	/**
-	 * Regular expression pattern used to capture company name, url, and logo url from
-	 * cURL output
-	 */
-	public static final String REGEX_PATTERN = "(?<= )[^\\\\\"]++";
-	/** Maximum pixel width for uploaded company logo */
-
-	public static final float MAX_HEIGHT = 60;
+	private static final String BODY_FLAG = "author_association";
+	
 	/**
 	 * System's COMMONS_PATH environmental variable, which leads to the root directory
 	 * of the project's GitHub repo
 	 */
-	public static final String COMMONS_PATH = System.getenv("COMMONS_PATH");
+	private static final String COMMONS_PATH = System.getenv("COMMONS_PATH");
+	
+	/** Number of pieces of information extracted from each GitHub issue */
+	private static final int ISSUE_DATA = 3;
+	
+	/** Specific text String located in cURL command output on same line as body of Issues */
+	private static final String ISSUE_FLAG = "Company";
+	
+	/** Specific index within 'body' line where end of ISSUE_FLAG may exist */
+	private static final int ISSUE_FLAG_END = 16;
+	
+	/** Specific index within 'body' line where start of ISSUE_FLAG may exist */
+	private static final int ISSUE_FLAG_START = 9;
+
+	/** String located in GitHub issues for any piece of information*/
+	private static final String ISSUE_SKIP_FLAG = "TBD";
+	
+	/** Maximum pixel width for uploaded company logo */
+	private static final float MAX_HEIGHT = 60;
+	
+	/**
+	 * Regular expression pattern used to capture company name, url, and logo url from
+	 * cURL output
+	 */
+	private static final String REGEX_PATTERN = "(?<= )[^\\\\\"]++";
+	
 	/**
 	 * Discretionary number of milliseconds the copyURLToFile method will run until timeout
 	 */
-	public static final int TIMEOUT_MILLIS = 10000;
+	private static final int TIMEOUT_MILLIS = 10000;
 
 	/**
 	 * Main method; contains most critical functionality of program including establishing
@@ -74,11 +84,11 @@ public class ImageResizer {
 		String line;
 		String bodyLine;
 		String ymlLine;
-		boolean duplicate = false;
+		boolean addIssue = true;
 		String company = null;
 		String url =  null;
 		String link = null;
-		int companiesAdded = 0;
+		boolean companiesAdded = false;
 
 		//Establishes the BufferedWriter needed to append text to 'participants.yml'
 		BufferedWriter out = null;
@@ -91,7 +101,12 @@ public class ImageResizer {
 		}
 
 		/**
-		 * TODO this Javadoc
+		 * The main functionality of the program; processes through the GitHub Issue looking for
+		 * specific Strings of text that indicate whether or not the Issue involves adding a
+		 * company to the OpenShift Commons participants. If the Issue is formatted correctly and
+		 * the company has not already been processed, the program appends the company to the
+		 * 'participants.yml' file at the end of the list and calls on the proper method to
+		 * process and resize the image file at the URL stored in the "link" String
 		 */
 		while (inputReader.hasNextLine()) {
 			line = inputReader.nextLine();
@@ -100,6 +115,7 @@ public class ImageResizer {
 				if (bodyLine.substring(ISSUE_FLAG_START, ISSUE_FLAG_END)
 						.equalsIgnoreCase(ISSUE_FLAG)) {
 					Matcher m = Pattern.compile(REGEX_PATTERN).matcher(bodyLine);
+					//Uses custom generated regex pattern to capture and store specific Strings
 					for (int i = 0; i < ISSUE_DATA; i++) {
 						if (m.find()) {
 							if (i == 0) {
@@ -114,21 +130,26 @@ public class ImageResizer {
 					}
 					Scanner participantsReader = new Scanner(new File(COMMONS_PATH
 							+ "/data/participants.yml"));
+					//Checks for duplicate and checks to see if any field is "TBD"
 					while (participantsReader.hasNextLine()) {
 						ymlLine = participantsReader.nextLine();
-						if (ymlLine.contains(company)) {
-							duplicate = true;
+						if (ymlLine.contains(company) || (company.equalsIgnoreCase(ISSUE_SKIP_FLAG))
+								|| (url.equalsIgnoreCase(ISSUE_SKIP_FLAG))
+								|| (link.equalsIgnoreCase(ISSUE_SKIP_FLAG))) {
+							addIssue = false;
 						}
 					}
 					participantsReader.close();
-					if (!duplicate) {
+					if (addIssue) {
 						String extension = getExtension(link);
+						//If SVG file, does not resize image and vice-a-versa
 						if (extension.equals("svg")) {
 							resizeSVG(company, link);
 						} else {
 							resizeNonSVG(company, link, extension);
 						}
-						companiesAdded++;
+						companiesAdded = true;
+						//Appends company and information to 'participants.yml'
 						out.append("- name: \"" + company + "\"");
 						out.newLine();
 						out.append("  link: \"" + url + "\"");
@@ -136,6 +157,7 @@ public class ImageResizer {
 						out.append("  logo: \"commons-logos/" +
 								company.toLowerCase().replaceAll("\\s","") + "." + extension + "\"");
 						out.newLine();
+						//Prints to the console which companies were added
 						System.out.println("\nCompany \"" + company + "\" added.");
 					}
 				}
@@ -149,7 +171,7 @@ public class ImageResizer {
 		 */
 		inputReader.close();
 		System.out.println();
-		if (companiesAdded == 0) {
+		if (companiesAdded) {
 			System.out.println("No new companies added.\n");
 		}
 		out.close();
@@ -166,7 +188,14 @@ public class ImageResizer {
 	}
 
 	/**
-	 * TODO this Javadoc
+	 * Static method used to process the image at the parameterized URL, retrieve its dimensions,
+	 * and resize the image if the height of the image exceeds 60 pixels. If the height is above
+	 * the max height, creates new BufferedImage file and uses Graphics2D class to redraw the
+	 * graphics from oversized logo onto new, smaller "canvas" file. Then, new file is output into
+	 * commons-logos with the proper name. If not oversized, simply outputs logo.
+	 * @param company the name of the company whose logo is to be processed
+	 * @param logoUrl the URL that contains the company's logo image file
+	 * @param extension the logo image's type (file extension)
 	 */
 	public static void resizeNonSVG(String company, String logoUrl, String extension) {
 		//Using the ImageIO and URL classes, reads in the image at the given URL
@@ -183,10 +212,11 @@ public class ImageResizer {
 		int height = logo.getHeight();
 		int width = logo.getWidth();
 		int type = logo.getType();
-		float conversionRatio = MAX_HEIGHT / (float) height;
 		boolean resized = false;
 		BufferedImage outputLogo = null;
-
+		//Calculates scale-down ratio
+		float conversionRatio = MAX_HEIGHT / (float) height;
+		
 		/**
 		 * Re-assigns width and height variables to properly scale logo dimensions and draws logo
 		 * image onto newly resized "blank canvas" IF height exceeds maximum height
@@ -204,12 +234,14 @@ public class ImageResizer {
 		//Writes the new, resized image to its proper location in the GitHub repo
 		File outputFile = new File(COMMONS_PATH + "/source/img/commons-logos/" +
 				company.toLowerCase().replaceAll("\\s","") + "." + extension);
+		//If image was not resized, write input (unaltered) image
 		if (!resized) {
 			try {
 				ImageIO.write(logo, extension, outputFile);
 			} catch (IOException e) {
 				System.out.println("Error: Unable to write the image to the specified location");
 			}
+		//If image was resized, write output (altered) image
 		} else {
 			try {
 				ImageIO.write(outputLogo, extension, outputFile);
@@ -220,7 +252,10 @@ public class ImageResizer {
 	}
 
 	/**
-	 * TODO this Javadoc
+	 * Static method used to process Scalable Vector Graphic image files. Method simply writes SVG
+	 * file at parameterized link to commons-logos
+	 * @param company
+	 * @param logoUrl
 	 */
 	public static void resizeSVG(String company, String logoUrl) {
 		URL url = null;
