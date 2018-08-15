@@ -24,15 +24,15 @@ $ git fetch upstream
 
 Currently the most common task is to add partners' information to the website, i.e., their logo, name, and url. You can check if any there's any logo waiting to be added on this repository's [issues](https://github.com/openshift/commons.openshift.org/issues).
 
-There exists a shell script and Java program that automates the addition of partners to OpenShift Commons. To use the script and program, add an Issue in the following format:
+There exists a shell script and Java program within the repository that automates the addition of partners to OpenShift Commons. To use the script and program to add a partner, add an Issue where the body is in the following format:
 
 ```
-Company: Company Name
-URL: URL of Home Web Page
-Logo: URL of the Company's Logo
+Company: *Company Name*
+URL: *URL of Home Web Page*
+Logo: *URL of the Company's Logo*
 ```
 
-Capitalization of the fields does not matter, however each need to be on different lines, spelled correctly, and be followed with `: ` (note the space). A "TBD" can act as a placeholder for any of the three fields. The program will simply skip the issue entirely until the TBD is revised. The script and program runs every evening at midnight.
+Capitalization of the fields does not matter, however each need to be on different lines, spelled correctly, and be followed with `: ` (note the space). A "TBD" can act as a placeholder for any of the three fields. The program will simply skip the issue entirely until the TBD is revised. The website is built using the script and program every evening at midnight.
 
 
 ## Adding Gathering Pages
