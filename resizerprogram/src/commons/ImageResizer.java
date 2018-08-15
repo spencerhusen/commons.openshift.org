@@ -136,6 +136,8 @@ public class ImageResizer {
 						ymlLine = participantsReader.nextLine();
 						if ((ymlLine.contains(company)) || (bodyLine.contains(ISSUE_SKIP_FLAG))) {
 							addIssue = false;
+						} else {
+							addIssue = true;
 						}
 					}
 					participantsReader.close();
