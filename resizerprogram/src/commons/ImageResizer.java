@@ -50,7 +50,7 @@ public class ImageResizer {
 	private static final int ISSUE_FLAG_START = 9;
 
 	/** String located in GitHub issues for any piece of information*/
-	private static final String ISSUE_SKIP_FLAG = "TBD";
+	private static final String ISSUE_SKIP_FLAG = " TBD";
 	
 	/** Maximum pixel width for uploaded company logo */
 	private static final float MAX_HEIGHT = 60;
@@ -128,15 +128,13 @@ public class ImageResizer {
 							}
 						}
 					}
-					
 					Scanner participantsReader = new Scanner(new File(COMMONS_PATH
 							+ "/data/participants.yml"));
+					
 					//Checks for duplicate and checks to see if any field is "TBD"
 					while (participantsReader.hasNextLine()) {
 						ymlLine = participantsReader.nextLine();
-						if (ymlLine.contains(company) && ((company.equalsIgnoreCase(ISSUE_SKIP_FLAG))
-								|| (url.equalsIgnoreCase(ISSUE_SKIP_FLAG))
-								|| (link.equalsIgnoreCase(ISSUE_SKIP_FLAG)))) {
+						if ((ymlLine.contains(company)) || (bodyLine.contains(ISSUE_SKIP_FLAG))) {
 							addIssue = false;
 						}
 					}
